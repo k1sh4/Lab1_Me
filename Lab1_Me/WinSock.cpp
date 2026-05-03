@@ -20,18 +20,18 @@ const char* getErrorName(int errorCode) {
     case WSAENOBUFS:        return "WSAENOBUFS";
     case WSAENOTSOCK:       return "WSAENOTSOCK";
     case WSAEADDRNOTAVAIL:  return "WSAEADDRNOTAVAIL";
-    default:                return "НЕВІДОМА_ПОМИЛКА";
+    default:                return "UNKNOWN_ERROR";
     }
 }
 
 void printSocketStatus(const char* socketName, SOCKET s) {
     if (s == INVALID_SOCKET) {
         int err = WSAGetLastError();
-        cout << "[ПОМИЛКА] " << socketName << " не створено! Код: "
+        cout << "[ERROR] " << socketName << " creation failed! Code: "
             << err << " [" << getErrorName(err) << "]" << endl;
     }
     else {
-        cout << "[ОК] " << socketName << " успішно ініціалізовано." << endl;
+        cout << "[OK] " << socketName << " initialized successfully." << endl;
     }
 }
 
@@ -39,21 +39,21 @@ void bindAndPrint(const char* socketName, SOCKET s, sockaddr_in& addr) {
     int result = bind(s, (sockaddr*)&addr, sizeof(addr));
     if (result == SOCKET_ERROR) {
         int err = WSAGetLastError();
-        cout << "[ЗБІЙ BIND] " << socketName << " -> Код: "
+        cout << "[BIND FAILED] " << socketName << " -> Code: "
             << err << " [" << getErrorName(err) << "]" << endl;
     }
     else {
-        cout << "[BIND ОК] " << socketName << " успішно прив'язано." << endl;
+        cout << "[BIND OK] " << socketName << " bound successfully." << endl;
     }
 }
 
 void printBindError(const char* testName, int result) {
     if (result == SOCKET_ERROR) {
         int err = WSAGetLastError();
-        cout << " -> Спіймано помилку: " << err << " [" << getErrorName(err) << "]" << endl;
+        cout << " -> Error caught: " << err << " [" << getErrorName(err) << "]" << endl;
     }
     else {
-        cout << " -> Помилок не виявлено (неочікувано)" << endl;
+        cout << " -> No errors detected (unexpected)" << endl;
     }
 }
 
@@ -62,48 +62,48 @@ int main() {
 
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
-        cout << "Критична помилка: WSAStartup не спрацював. Код: " << result << endl;
+        cout << "Critical error: WSAStartup failed. Code: " << result << endl;
         return 1;
     }
 
-    cout << ">>> ЕТАП 1: Налаштування WinSock <<<" << endl;
-    cout << "Бібліотека завантажена успішно!" << endl;
-    cout << "Опис: " << wsaData.szDescription << endl;
-    cout << "Статус системи: " << wsaData.szSystemStatus << endl;
-    cout << "Поточна версія: "
+    cout << ">>> STAGE 1: WinSock Setup <<<" << endl;
+    cout << "Library loaded successfully!" << endl;
+    cout << "Description: " << wsaData.szDescription << endl;
+    cout << "System status: " << wsaData.szSystemStatus << endl;
+    cout << "Current version: "
         << (int)LOBYTE(wsaData.wVersion) << "."
         << (int)HIBYTE(wsaData.wVersion) << endl;
-    cout << "Макс. підтримувана версія: "
+    cout << "Max supported version: "
         << (int)LOBYTE(wsaData.wHighVersion) << "."
         << (int)HIBYTE(wsaData.wHighVersion) << endl;
-    cout << "Ліміт розміру UDP-датаграми (від ОС): " << wsaData.iMaxUdpDg << " байт" << endl;
+    cout << "UDP datagram size limit (from OS): " << wsaData.iMaxUdpDg << " bytes" << endl;
 
     // Умова 
     int maxDatagramSize = 247;
     char datagramBuffer[247];
-    cout << "\nКастомний розмір буфера (за варіантом): " << maxDatagramSize << " байт" << endl;
-    cout << "Виділено пам'яті під буфер: " << sizeof(datagramBuffer) << " байт" << endl;
+    cout << "\nCustom buffer size (by variant): " << maxDatagramSize << " bytes" << endl;
+    cout << "Memory allocated for buffer: " << sizeof(datagramBuffer) << " bytes" << endl;
 
-    cout << "\n>>> ЕТАП 2: Генерація сокетів <<<" << endl;
+    cout << "\n>>> STAGE 2: Generating Sockets <<<" << endl;
 
     SOCKET sock1 = socket(AF_INET, SOCK_DGRAM, 0);
     SOCKET sock2 = socket(AF_INET, SOCK_DGRAM, 0);
     SOCKET sock3 = socket(AF_INET, SOCK_STREAM, 0);
     SOCKET sock4 = socket(AF_INET, SOCK_STREAM, 0);
 
-    printSocketStatus("Сокет #1 (UDP, широкомовний)", sock1);
-    printSocketStatus("Сокет #2 (UDP, статичний IP)", sock2);
-    printSocketStatus("Сокет #3 (TCP, статичний IP)", sock3);
-    printSocketStatus("Сокет #4 (TCP, будь-який локальний)", sock4);
+    printSocketStatus("Socket #1 (UDP, broadcast)", sock1);
+    printSocketStatus("Socket #2 (UDP, static IP)", sock2);
+    printSocketStatus("Socket #3 (TCP, static IP)", sock3);
+    printSocketStatus("Socket #4 (TCP, any local)", sock4);
 
     BOOL broadcastEnable = TRUE;
     if (setsockopt(sock1, SOL_SOCKET, SO_BROADCAST, (char*)&broadcastEnable, sizeof(broadcastEnable)) == SOCKET_ERROR) {
         int err = WSAGetLastError();
-        cout << "Не вдалося увімкнути Broadcast для Сокета #1. Код: "
+        cout << "Failed to enable Broadcast for Socket #1. Code: "
             << err << " [" << getErrorName(err) << "]" << endl;
     }
     else {
-        cout << "Режим Broadcast для Сокета #1 активовано." << endl;
+        cout << "Broadcast mode for Socket #1 activated." << endl;
     }
 
     sockaddr_in addr1{}, addr2{}, addr3{}, addr4{};
@@ -128,16 +128,16 @@ int main() {
     addr4.sin_port = htons(5004);
     addr4.sin_addr.s_addr = INADDR_ANY;
 
-    cout << "\n>>> ЕТАП 3: Прив'язка (Bind) <<<" << endl;
-    bindAndPrint("Сокет #1", sock1, addr1);
-    bindAndPrint("Сокет #2", sock2, addr2);
-    bindAndPrint("Сокет #3", sock3, addr3);
-    bindAndPrint("Сокет #4", sock4, addr4);
+    cout << "\n>>> STAGE 3: Binding <<<" << endl;
+    bindAndPrint("Socket #1", sock1, addr1);
+    bindAndPrint("Socket #2", sock2, addr2);
+    bindAndPrint("Socket #3", sock3, addr3);
+    bindAndPrint("Socket #4", sock4, addr4);
 
-    cout << "\n>>> ЕТАП 4: Тестування обробки помилок bind() <<<" << endl;
+    cout << "\n>>> STAGE 4: bind() Error Handling Tests <<<" << endl;
 
     // 1. WSAEADDRINUSE
-    cout << "[Тест 1] Зайнята адреса (WSAEADDRINUSE)";
+    cout << "[Test 1] Address in use (WSAEADDRINUSE)";
     SOCKET sAddrUse1 = socket(AF_INET, SOCK_STREAM, 0);
     SOCKET sAddrUse2 = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in sameAddr{};
@@ -149,7 +149,7 @@ int main() {
     printBindError("", rAddrInUse);
 
     // 2. WSAEINVAL
-    cout << "[Тест 2] Повторна прив'язка (WSAEINVAL)";
+    cout << "[Test 2] Invalid argument / Already bound (WSAEINVAL)";
     SOCKET sInvalidBind = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in invalAddr{};
     invalAddr.sin_family = AF_INET;
@@ -160,7 +160,7 @@ int main() {
     printBindError("", rInvalid);
 
     // 3. WSAEFAULT
-    cout << "[Тест 3] Неправильний розмір структури (WSAEFAULT)";
+    cout << "[Test 3] Bad address / structure size (WSAEFAULT)";
     SOCKET sFault = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in faultAddr{};
     faultAddr.sin_family = AF_INET;
@@ -170,7 +170,7 @@ int main() {
     printBindError("", rFault);
 
     // 4. WSAENOTSOCK
-    cout << "[Тест 4] Хибний дескриптор (WSAENOTSOCK)";
+    cout << "[Test 4] Invalid socket descriptor (WSAENOTSOCK)";
     sockaddr_in notSockAddr{};
     notSockAddr.sin_family = AF_INET;
     notSockAddr.sin_port = htons(5053);
@@ -179,7 +179,7 @@ int main() {
     printBindError("", rNotSock);
 
     // 5. WSANOTINITIALISED
-    cout << "[Тест 5] Вимкнений WinSock (WSANOTINITIALISED)";
+    cout << "[Test 5] WinSock not initialized (WSANOTINITIALISED)";
     SOCKET sNotInit = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in notInitAddr{};
     notInitAddr.sin_family = AF_INET;
@@ -193,7 +193,7 @@ int main() {
     // Повторна ініціалізація для безпечного очищення пам'яті
     result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
-        cout << "Помилка повторного запуску WSAStartup." << endl;
+        cout << "Error restarting WSAStartup." << endl;
         return 1;
     }
 
@@ -211,6 +211,6 @@ int main() {
 
     WSACleanup();
 
-    cout << "\n>>> РОБОТУ ЗАВЕРШЕНО <<<" << endl;
+    cout << "\n>>> PROGRAM FINISHED <<<" << endl;
     return 0;
 }
